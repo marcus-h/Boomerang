@@ -68,7 +68,7 @@ public class ObservableDynamicICFG implements ObservableICFG<Statement, Method> 
 
   @Override
   public void addCalleeListener(CalleeListener<Statement, Method> listener) {
-    // System.out.println("addCalleeListener for stmt: " + listener.getObservedCaller());
+    System.out.println("addCalleeListener for stmt: " + listener.getObservedCaller());
     if (!calleeListeners.put(listener.getObservedCaller(), listener)) {
       return;
     }
@@ -113,7 +113,7 @@ public class ObservableDynamicICFG implements ObservableICFG<Statement, Method> 
 
   @Override
   public void addCallerListener(CallerListener<Statement, Method> listener) {
-    // System.out.println("addCallerListener for method: " + listener.getObservedCallee());
+    System.out.println("addCallerListener for method: " + listener.getObservedCallee());
     if (!callerListeners.put(listener.getObservedCallee(), listener)) {
       return;
     }
@@ -146,7 +146,7 @@ public class ObservableDynamicICFG implements ObservableICFG<Statement, Method> 
    * call graph did not change
    */
   protected boolean addCallIfNotInGraph(Statement caller, Method callee) {
-    // System.out.println("addCallIfNotInGraph: " + caller + " -> " + callee);
+    System.out.println("addCallIfNotInGraph: " + caller + " -> " + callee);
     Edge edge = new Edge(caller, callee);
     if (!demandDrivenCallGraph.addEdge(edge)) {
       return false;
@@ -214,18 +214,18 @@ public class ObservableDynamicICFG implements ObservableICFG<Statement, Method> 
 
   @Override
   public void computeFallback() {
-    // System.out.println("FALLBACK START");
+    System.out.println("FALLBACK START");
     boolean changes = false;
     do {
       resolutionStrategy.computeFallback(this);
       changes = runCallerListeners();
     } while (changes);
-    // System.out.println("FALLBACK DONE");
+    System.out.println("FALLBACK DONE");
   }
 
   private boolean runCallerListeners() {
     int count = processedCallerListeners.size();
-    // System.out.println("count: " + count);
+    System.out.println("count: " + count);
     // System.out.println(callerListenerDone);
     Set<CallerListener<Statement, Method>> todo;
     do {
@@ -238,11 +238,11 @@ public class ObservableDynamicICFG implements ObservableICFG<Statement, Method> 
           continue;
         }
         processedCallerListeners.add(listener);
-        // System.out.println("PRECOMPUTE callerListener");
+        System.out.println("PRECOMPUTE callerListener");
         Collection<Edge> edges =
             resolutionStrategy.getPrecomputedCallGraph().edgesInto(listener.getObservedCallee());
-        // System.out.println("edges: " + edges);
-        // System.out.println(listener.getObservedCallee());
+        System.out.println("edges: " + edges);
+        System.out.println(listener.getObservedCallee());
         for (Edge edge : edges) {
           addCallIfNotInGraph(edge.src(), edge.tgt());
         }

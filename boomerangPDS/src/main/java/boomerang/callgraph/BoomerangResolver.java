@@ -117,7 +117,7 @@ public class BoomerangResolver implements ICallerCalleeResolutionStrategy {
             for (CallGraph.Edge e : precomputedCallGraph.edgesOutOf(s)) {
               // TODO Refactor. Should not be required, if the backward analysis is sound (data-flow
               // of static fields)
-              //System.out.println("PRECOMPUTE: " + e.src() + " -> " + e.tgt());
+              /System.out.println("PRECOMPUTE: " + e.src() + " -> " + e.tgt());
               if (e.tgt().isDefined()) {
                 observableDynamicICFG.addCallIfNotInGraph(e.src(), e.tgt());
               }
@@ -177,7 +177,7 @@ public class BoomerangResolver implements ICallerCalleeResolutionStrategy {
         resolvingStmt.getMethod().getControlFlowGraph().getPredsOf(resolvingStmt)) {
       BackwardQuery query = BackwardQuery.make(new Edge(pred, resolvingStmt), value);
       solver.solve(query, false, false);
-      res.addAll(forAnyAllocationSiteOfQuery(query, resolvingStmt, pred));
+      forAnyAllocationSiteOfQuery(query, resolvingStmt, pred);
     }
 
     return res;
