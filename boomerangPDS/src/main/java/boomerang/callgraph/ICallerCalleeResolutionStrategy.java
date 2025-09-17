@@ -29,6 +29,10 @@ public interface ICallerCalleeResolutionStrategy {
 
   void computeFallback(ObservableDynamicICFG observableDynamicICFG);
 
+  CallGraph getPrecomputedCallGraph();
+
+  void setObservableDynamicICFG(ObservableDynamicICFG observableDynamicICFG);
+
   Method resolveSpecialInvoke(InvokeExpr ie);
 
   Collection<Method> resolveInstanceInvoke(Statement stmt);

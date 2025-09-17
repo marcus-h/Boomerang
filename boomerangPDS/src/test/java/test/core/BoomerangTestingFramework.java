@@ -150,6 +150,11 @@ public class BoomerangTestingFramework extends TestingFramework {
       explicitlyUnexpectedAllocationSites =
           an.computeSeeds().stream().map(Query::asNode).collect(Collectors.toList());
     }
+    System.out.println("\n\nCODE");
+    for (boomerang.scope.Statement stmt : getTestMethod().getStatements()) {
+      System.out.println(stmt);
+    }
+    System.out.println("END CODE\n\n");
     for (int i = 0; i < getIterations(); i++) {
       for (AnalysisMode analysis : getAnalyses()) {
         switch (analysis) {

@@ -121,6 +121,8 @@ public abstract class BackwardBoomerangSolver<W extends Weight> extends Abstract
   protected void callFlow(Method caller, Node<Edge, Val> curr, Statement callSite) {
     InvokeExpr invokeExpr = callSite.getInvokeExpr();
     if (dataFlowScope.isExcluded(invokeExpr.getDeclaredMethod())) {
+      System.out.println("bypass at: " + curr);
+      System.out.println("callSite: " + callSite);
       byPassFlowAtCallsite(caller, curr);
       return;
     }
@@ -296,6 +298,7 @@ public abstract class BackwardBoomerangSolver<W extends Weight> extends Abstract
       throw new RuntimeException("Invalid propagate Unbalanced return");
     }
     if (!isMatchingCallSiteCalleePair(callSite, transInCallee.getLabel().getMethod())) {
+      System.out.println("NON-MATCTHING (backward)");
       return;
     }
     cfg.addSuccsOfListener(

@@ -42,6 +42,10 @@ public class ObservableStaticICFG implements ObservableICFG<Statement, Method> {
 
   @Override
   public void addCalleeListener(CalleeListener<Statement, Method> listener) {
+    //System.out.println(
+    //    "# ObservableStaticICFG: addCalleeListener: observed caller: "
+    //        + listener.getObservedCaller());
+    // Thread.currentThread().dumpStack();
     Collection<Edge> edges = precomputedGraph.edgesOutOf(listener.getObservedCaller());
     if (edges.size() > IMPRECISE_CALL_GRAPH_WARN_THRESHOLD) {
       LOGGER.debug(
@@ -53,7 +57,16 @@ public class ObservableStaticICFG implements ObservableICFG<Statement, Method> {
       }
     }
     for (CallGraph.Edge e : edges) {
+      //System.out.println("edge: " + e);
       if (e.tgt().isDefined()) {
+        for (Statement stmt : e.tgt().getStatements()) {
+          //System.out.println(stmt);
+        }
+        if (e.tgt().getName().equals("foo")) {
+          //System.out.println("skipping: " + e.tgt());
+          continue;
+        }
+
         listener.onCalleeAdded(listener.getObservedCaller(), e.tgt());
       }
     }
@@ -64,6 +77,10 @@ public class ObservableStaticICFG implements ObservableICFG<Statement, Method> {
 
   @Override
   public void addCallerListener(CallerListener<Statement, Method> listener) {
+    //System.out.println(
+    //    "# ObservableStaticICFG: addCallerListener: observed callee: "
+    //        + listener.getObservedCallee());
+    // Thread.currentThread().dumpStack();
     Collection<Edge> edges = precomputedGraph.edgesInto(listener.getObservedCallee());
     if (edges.size() > IMPRECISE_CALL_GRAPH_WARN_THRESHOLD) {
       LOGGER.debug(

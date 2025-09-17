@@ -205,6 +205,7 @@ public abstract class ForwardBoomerangSolver<W extends Weight> extends AbstractB
       throw new RuntimeException("Invalid propagate Unbalanced return");
     }
     if (!isMatchingCallSiteCalleePair(callSite, transInCallee.getLabel().getMethod())) {
+      System.out.println("NON-MATCTHING (forward)");
       return;
     }
     cfg.addSuccsOfListener(

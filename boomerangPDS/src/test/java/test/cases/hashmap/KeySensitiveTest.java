@@ -21,11 +21,24 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import test.TestingFramework;
 import test.core.BoomerangTestRunnerInterceptor;
 import test.core.QueryMethods;
+import test.core.TestConfig;
 import test.core.TestParameters;
 import test.core.selfrunning.AllocatedObject;
 import test.core.selfrunning.NoAllocatedObject;
 
 @ExtendWith(BoomerangTestRunnerInterceptor.class)
+/*@TestConfig(
+    includedClasses = {
+      "java.util.HashMap",
+      "java.util.HashMap$TreeNode",
+      "java.util.HashMap$HashIterator",
+      "java.util.HashMap$ValueIterator",
+      "java.util.HashMap$Values",
+      "java.util.AbstractCollection",
+      "java.util.HashMap$Node",
+      "java.util.AbstractMap",
+      "java.util.Map"
+    })*/
 public class KeySensitiveTest {
 
   public static class Allocation implements AllocatedObject {}

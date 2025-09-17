@@ -129,7 +129,9 @@ public class BoomerangOptions {
   }
 
   public boolean onTheFlyCallGraph() {
-    return builder.onTheFlyCallGraph;
+    // return builder.onTheFlyCallGraph;
+    //return false;
+    return true;
   }
 
   public boolean onTheFlyControlFlow() {
@@ -173,7 +175,8 @@ public class BoomerangOptions {
   }
 
   public boolean allowMultipleQueries() {
-    return builder.allowMultipleQueries;
+    // return builder.allowMultipleQueries;
+    return true;
   }
 
   public boolean handleSpecialInvokeAsNormalPropagation() {

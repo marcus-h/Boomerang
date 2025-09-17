@@ -24,6 +24,9 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +54,7 @@ public class ObservableDynamicICFG implements ObservableICFG<Statement, Method> 
       HashMultimap.create();
   private final Multimap<Method, CallerListener<Statement, Method>> callerListeners =
       HashMultimap.create();
+  private final Set<CallerListener<Statement, Method>> processedCallerListeners = new HashSet<>();
 
   private final ObservableControlFlowGraph cfg;
   private final ICallerCalleeResolutionStrategy resolutionStrategy;
@@ -59,10 +63,12 @@ public class ObservableDynamicICFG implements ObservableICFG<Statement, Method> 
       ObservableControlFlowGraph cfg, ICallerCalleeResolutionStrategy resolutionStrategy) {
     this.cfg = cfg;
     this.resolutionStrategy = resolutionStrategy;
+    resolutionStrategy.setObservableDynamicICFG(this);
   }
 
   @Override
   public void addCalleeListener(CalleeListener<Statement, Method> listener) {
+    // System.out.println("addCalleeListener for stmt: " + listener.getObservedCaller());
     if (!calleeListeners.put(listener.getObservedCaller(), listener)) {
       return;
     }
@@ -81,7 +87,7 @@ public class ObservableDynamicICFG implements ObservableICFG<Statement, Method> 
       }
     }
 
-    for (Edge e : edges) {
+    for (Edge e : Lists.newArrayList(edges)) {
       if (e.tgt().isDefined()) {
         listener.onCalleeAdded(stmt, e.tgt());
       }
@@ -107,6 +113,7 @@ public class ObservableDynamicICFG implements ObservableICFG<Statement, Method> 
 
   @Override
   public void addCallerListener(CallerListener<Statement, Method> listener) {
+    // System.out.println("addCallerListener for method: " + listener.getObservedCallee());
     if (!callerListeners.put(listener.getObservedCallee(), listener)) {
       return;
     }
@@ -129,6 +136,9 @@ public class ObservableDynamicICFG implements ObservableICFG<Statement, Method> 
     for (Edge e : Lists.newArrayList(edges)) {
       listener.onCallerAdded(e.src(), method);
     }
+    if (!edges.isEmpty()) {
+      processedCallerListeners.add(listener);
+    }
   }
 
   /**
@@ -136,6 +146,7 @@ public class ObservableDynamicICFG implements ObservableICFG<Statement, Method> 
    * call graph did not change
    */
   protected boolean addCallIfNotInGraph(Statement caller, Method callee) {
+    // System.out.println("addCallIfNotInGraph: " + caller + " -> " + callee);
     Edge edge = new Edge(caller, callee);
     if (!demandDrivenCallGraph.addEdge(edge)) {
       return false;
@@ -203,7 +214,41 @@ public class ObservableDynamicICFG implements ObservableICFG<Statement, Method> 
 
   @Override
   public void computeFallback() {
-    resolutionStrategy.computeFallback(this);
+    // System.out.println("FALLBACK START");
+    boolean changes = false;
+    do {
+      resolutionStrategy.computeFallback(this);
+      changes = runCallerListeners();
+    } while (changes);
+    // System.out.println("FALLBACK DONE");
+  }
+
+  private boolean runCallerListeners() {
+    int count = processedCallerListeners.size();
+    // System.out.println("count: " + count);
+    // System.out.println(callerListenerDone);
+    Set<CallerListener<Statement, Method>> todo;
+    do {
+      todo =
+          callerListeners.values().stream()
+              .filter(l -> !processedCallerListeners.contains(l))
+              .collect(Collectors.toSet());
+      for (CallerListener<Statement, Method> listener : todo) {
+        if (processedCallerListeners.contains(listener)) {
+          continue;
+        }
+        processedCallerListeners.add(listener);
+        // System.out.println("PRECOMPUTE callerListener");
+        Collection<Edge> edges =
+            resolutionStrategy.getPrecomputedCallGraph().edgesInto(listener.getObservedCallee());
+        // System.out.println("edges: " + edges);
+        // System.out.println(listener.getObservedCallee());
+        for (Edge edge : edges) {
+          addCallIfNotInGraph(edge.src(), edge.tgt());
+        }
+      }
+    } while (!todo.isEmpty());
+    return count != processedCallerListeners.size();
   }
 
   @Override

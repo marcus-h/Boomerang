@@ -35,11 +35,12 @@ import boomerang.solver.AbstractBoomerangSolver;
 import boomerang.solver.ForwardBoomerangSolver;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,14 +63,15 @@ public class BoomerangResolver implements ICallerCalleeResolutionStrategy {
   private static final String THREAD_RUN_SUB_SIGNATURE = "void run()";
 
   private static final NoCalleeFoundFallbackOptions FALLBACK_OPTION =
-      NoCalleeFoundFallbackOptions.BYPASS;
+      NoCalleeFoundFallbackOptions.PRECOMPUTED;
   private static final Multimap<DeclaredMethod, WrappedClass> didNotFindMethodLog =
       HashMultimap.create();
 
   private final CallGraph precomputedCallGraph;
+  private ObservableDynamicICFG observableDynamicICFG;
   private final WeightedBoomerang<? extends Weight> solver;
   private final Set<Statement> queriedInvokeExprAndAllocationSitesFound = new LinkedHashSet<>();
-  private final Set<Statement> queriedInvokeExpr = new LinkedHashSet<>();
+  private Set<Statement> queriedInvokeExpr = new LinkedHashSet<>();
 
   public BoomerangResolver(FrameworkScope frameworkScope) {
     this.solver = new Boomerang(frameworkScope);
@@ -89,27 +91,44 @@ public class BoomerangResolver implements ICallerCalleeResolutionStrategy {
   }
 
   @Override
+  public void setObservableDynamicICFG(ObservableDynamicICFG observableDynamicICFG) {
+    this.observableDynamicICFG = observableDynamicICFG;
+  }
+
+  @Override
+  public CallGraph getPrecomputedCallGraph() {
+    return precomputedCallGraph;
+  }
+
+  @Override
   public void computeFallback(ObservableDynamicICFG observableDynamicICFG) {
     int refined = 0;
     int precomputed = 0;
-    for (Statement s : Lists.newArrayList(queriedInvokeExpr)) {
-      if (!queriedInvokeExprAndAllocationSitesFound.contains(s)) {
-        logger.debug("Call graph ends at {}", s);
-        precomputed++;
-        if (FALLBACK_OPTION == NoCalleeFoundFallbackOptions.PRECOMPUTED) {
-          for (CallGraph.Edge e : precomputedCallGraph.edgesOutOf(s)) {
-            // TODO Refactor. Should not be required, if the backward analysis is sound (data-flow
-            // of static fields)
-            if (e.tgt().isDefined()) {
-              observableDynamicICFG.addCallIfNotInGraph(e.src(), e.tgt());
+    while (!queriedInvokeExpr.isEmpty()) {
+      Set<Statement> todo = queriedInvokeExpr;
+      queriedInvokeExpr = new LinkedHashSet<>();
+      for (Statement s : todo) {
+        if (!queriedInvokeExprAndAllocationSitesFound.contains(s)) {
+          logger.debug("Call graph ends at {}", s);
+          precomputed++;
+          if (FALLBACK_OPTION == NoCalleeFoundFallbackOptions.PRECOMPUTED) {
+            // strictly speaking, no alloc site was found - but we shouldn't process this stmt again
+            queriedInvokeExprAndAllocationSitesFound.add(s);
+            for (CallGraph.Edge e : precomputedCallGraph.edgesOutOf(s)) {
+              // TODO Refactor. Should not be required, if the backward analysis is sound (data-flow
+              // of static fields)
+              //System.out.println("PRECOMPUTE: " + e.src() + " -> " + e.tgt());
+              if (e.tgt().isDefined()) {
+                observableDynamicICFG.addCallIfNotInGraph(e.src(), e.tgt());
+              }
             }
           }
+          if (FALLBACK_OPTION == NoCalleeFoundFallbackOptions.BYPASS) {
+            observableDynamicICFG.notifyNoCalleeFound(s);
+          }
+        } else {
+          refined++;
         }
-        if (FALLBACK_OPTION == NoCalleeFoundFallbackOptions.BYPASS) {
-          observableDynamicICFG.notifyNoCalleeFound(s);
-        }
-      } else {
-        refined++;
       }
     }
     logger.debug("Refined edges {}, fallback to precomputed {}", refined, precomputed);
@@ -157,7 +176,7 @@ public class BoomerangResolver implements ICallerCalleeResolutionStrategy {
     for (Statement pred :
         resolvingStmt.getMethod().getControlFlowGraph().getPredsOf(resolvingStmt)) {
       BackwardQuery query = BackwardQuery.make(new Edge(pred, resolvingStmt), value);
-      solver.solve(query, false);
+      solver.solve(query, false, false);
       res.addAll(forAnyAllocationSiteOfQuery(query, resolvingStmt, pred));
     }
 
@@ -182,8 +201,10 @@ public class BoomerangResolver implements ICallerCalleeResolutionStrategy {
           res.add(candidate);
         }
       }
-      handlingForThreading(method, sootClass, res);
-      if (!res.isEmpty()) return res;
+      if (!res.isEmpty()) {
+        handlingForThreading(method, originalClass, res);
+        return res;
+      }
       if (sootClass.hasSuperclass()) {
         sootClass = sootClass.getSuperclass();
       } else {
@@ -202,19 +223,28 @@ public class BoomerangResolver implements ICallerCalleeResolutionStrategy {
   }
 
   private void handlingForThreading(
-      DeclaredMethod method, WrappedClass sootClass, Set<Method> res) {
-    // throw new RuntimeException("Threading not implemented");
-    // if (Scene.v().getFastHierarchy().isSubclass(sootClass,
-    // Scene.v().getSootClass(THREAD_CLASS)))
-    // {
-    // if (method.getSignature().equals(THREAD_START_SIGNATURE)) {
-    // for (SootMethod candidate : sootClass.getMethods()) {
-    // if (candidate.getSubSignature().equals(THREAD_RUN_SUB_SIGNATURE)) {
-    // res.add(candidate);
-    // }
-    // }
-    // }
-    // }
+      DeclaredMethod method, WrappedClass wrappedClass, Set<Method> res) {
+    if (!THREAD_START_SIGNATURE.equals(method.getSignature())) {
+      return;
+    }
+    List<WrappedClass> lookupClasses = new ArrayList<>();
+    lookupClasses.add(wrappedClass);
+    boolean inheritsFromThreadClass = THREAD_CLASS.equals(wrappedClass.getFullyQualifiedName());
+    while (wrappedClass.hasSuperclass() && !inheritsFromThreadClass) {
+      wrappedClass = wrappedClass.getSuperclass();
+      lookupClasses.add(wrappedClass);
+      inheritsFromThreadClass = THREAD_CLASS.equals(wrappedClass.getFullyQualifiedName());
+    }
+    if (!inheritsFromThreadClass) {
+      return;
+    }
+    for (WrappedClass candidateClass : lookupClasses) {
+      Optional<Method> runMethod = candidateClass.getMethods().stream().filter(m -> THREAD_RUN_SUB_SIGNATURE.equals(m.getSubSignature())).findFirst();
+      if (runMethod.isPresent()) {
+        res.add(runMethod.get());
+        break;
+      }
+    }
   }
 
   private final class IterateSolvers<W extends Weight> implements SolverCreationListener<W> {
@@ -250,7 +280,8 @@ public class BoomerangResolver implements ICallerCalleeResolutionStrategy {
                             getMethodFromClassOrFromSuperclass(
                                 invokeExpr.getInvokeExpr().getDeclaredMethod(),
                                 type.getWrappedClass())) {
-                          results.add(calleeMethod);
+                          // results.add(calleeMethod);
+                          observableDynamicICFG.addCallIfNotInGraph(invokeExpr, calleeMethod);
                         }
                       } else if (type.isArrayType()) {
                         Type base = type.getArrayBaseType();
@@ -259,7 +290,8 @@ public class BoomerangResolver implements ICallerCalleeResolutionStrategy {
                               getMethodFromClassOrFromSuperclass(
                                   invokeExpr.getInvokeExpr().getDeclaredMethod(),
                                   base.getWrappedClass())) {
-                            results.add(calleeMethod);
+                            // results.add(calleeMethod);
+                            observableDynamicICFG.addCallIfNotInGraph(invokeExpr, calleeMethod);
                           }
                         }
                       }
