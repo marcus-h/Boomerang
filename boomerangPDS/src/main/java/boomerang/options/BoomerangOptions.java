@@ -130,7 +130,7 @@ public class BoomerangOptions {
 
   public boolean onTheFlyCallGraph() {
     // return builder.onTheFlyCallGraph;
-    //return false;
+    // return false;
     return true;
   }
 

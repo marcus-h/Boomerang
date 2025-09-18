@@ -16,10 +16,7 @@ package boomerang.callgraph;
 
 import boomerang.WeightedBoomerang;
 import boomerang.scope.CallGraph;
-import boomerang.scope.InvokeExpr;
-import boomerang.scope.Method;
 import boomerang.scope.Statement;
-import java.util.Collection;
 
 public interface ICallerCalleeResolutionStrategy {
 
@@ -33,9 +30,9 @@ public interface ICallerCalleeResolutionStrategy {
 
   void setObservableDynamicICFG(ObservableDynamicICFG observableDynamicICFG);
 
-  Method resolveSpecialInvoke(InvokeExpr ie);
+  void resolveSpecialInvoke(Statement stmt);
 
-  Collection<Method> resolveInstanceInvoke(Statement stmt);
+  void resolveInstanceInvoke(Statement stmt);
 
-  Method resolveStaticInvoke(InvokeExpr ie);
+  void resolveStaticInvoke(Statement stmt);
 }

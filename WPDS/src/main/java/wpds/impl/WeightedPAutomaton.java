@@ -42,6 +42,7 @@ import pathexpression.PathExpressionComputer;
 import pathexpression.RegEx;
 import wpds.interfaces.ForwardDFSEpsilonVisitor;
 import wpds.interfaces.ForwardDFSVisitor;
+import wpds.interfaces.InitialStateListener;
 import wpds.interfaces.ReachabilityListener;
 import wpds.interfaces.State;
 import wpds.interfaces.WPAStateListener;
@@ -63,6 +64,7 @@ public abstract class WeightedPAutomaton<N extends Location, D extends State, W 
   private final Multimap<D, Transition<N, D>> transitionsOutOf = HashMultimap.create();
   private final Multimap<D, Transition<N, D>> transitionsInto = HashMultimap.create();
   private final Set<WPAUpdateListener<N, D, W>> listeners = new LinkedHashSet<>();
+  private final Set<InitialStateListener<D>> initialStateListeners = new LinkedHashSet<>();
   private final Multimap<D, WPAStateListener<N, D, W>> stateListeners = HashMultimap.create();
   private final Map<D, ForwardDFSVisitor<N, D, W>> stateToDFS = Maps.newHashMap();
   private final Map<D, ForwardDFSVisitor<N, D, W>> stateToEpsilonDFS = Maps.newHashMap();
@@ -368,6 +370,15 @@ public abstract class WeightedPAutomaton<N extends Location, D extends State, W 
     }
     for (WeightedPAutomaton<N, D, W> nested : Lists.newArrayList(nestedAutomatons)) {
       nested.registerListener(listener);
+    }
+  }
+
+  public void registerListener(InitialStateListener<D> listener) {
+    if (!initialStateListeners.add(listener)) {
+      return;
+    }
+    for (D initialState : Lists.newArrayList(getInitialStates())) {
+      listener.onInitialStateAdded(initialState);
     }
   }
 
@@ -825,7 +836,13 @@ public abstract class WeightedPAutomaton<N extends Location, D extends State, W 
   }
 
   public boolean addInitialState(D state) {
-    return initialStatesToSource.put(state, state);
+    if (!initialStatesToSource.put(state, state)) {
+      return false;
+    }
+    for (InitialStateListener<D> listener : Lists.newArrayList(initialStateListeners)) {
+      listener.onInitialStateAdded(state);
+    }
+    return true;
   }
 
   public void unregisterAllListeners() {

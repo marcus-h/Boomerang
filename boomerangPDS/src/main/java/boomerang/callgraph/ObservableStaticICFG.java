@@ -42,7 +42,7 @@ public class ObservableStaticICFG implements ObservableICFG<Statement, Method> {
 
   @Override
   public void addCalleeListener(CalleeListener<Statement, Method> listener) {
-    //System.out.println(
+    // System.out.println(
     //    "# ObservableStaticICFG: addCalleeListener: observed caller: "
     //        + listener.getObservedCaller());
     // Thread.currentThread().dumpStack();
@@ -57,13 +57,13 @@ public class ObservableStaticICFG implements ObservableICFG<Statement, Method> {
       }
     }
     for (CallGraph.Edge e : edges) {
-      //System.out.println("edge: " + e);
+      // System.out.println("edge: " + e);
       if (e.tgt().isDefined()) {
         for (Statement stmt : e.tgt().getStatements()) {
-          //System.out.println(stmt);
+          // System.out.println(stmt);
         }
         if (e.tgt().getName().equals("foo")) {
-          //System.out.println("skipping: " + e.tgt());
+          // System.out.println("skipping: " + e.tgt());
           continue;
         }
 
@@ -77,7 +77,7 @@ public class ObservableStaticICFG implements ObservableICFG<Statement, Method> {
 
   @Override
   public void addCallerListener(CallerListener<Statement, Method> listener) {
-    //System.out.println(
+    // System.out.println(
     //    "# ObservableStaticICFG: addCallerListener: observed callee: "
     //        + listener.getObservedCallee());
     // Thread.currentThread().dumpStack();

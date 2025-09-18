@@ -332,7 +332,6 @@ public abstract class AbstractBoomerangSolver<W extends Weight>
             callsitesOfCall.add(statement);
           }
         });
-    System.out.println(callsitesOfCall.contains(callSite));
     return callsitesOfCall.contains(callSite);
   }
 
