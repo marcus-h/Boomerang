@@ -24,6 +24,7 @@ import com.google.common.base.Stopwatch;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -55,10 +56,20 @@ public class IDEALAnalysis<W extends Weight> {
         };
   }
 
+  private Collection<Query> initialSeeds;
+
+  public Collection<Query> getInitialSeeds() {
+    if (initialSeeds == null) {
+      initialSeeds = seedFactory.computeSeeds();
+    }
+    return initialSeeds;
+  }
+
   public void run() {
     printOptions();
 
-    Collection<Query> initialSeeds = seedFactory.computeSeeds();
+    //Collection<Query> initialSeeds = seedFactory.computeSeeds();
+    Collection<Query> initialSeeds = getInitialSeeds();
 
     if (initialSeeds.isEmpty()) LOGGER.info("No seeds found!");
     else LOGGER.info("Analysing {} seeds!", initialSeeds.size());

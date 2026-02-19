@@ -67,13 +67,13 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java.version>11</java.version>
+        <java.version>21</java.version>
         <scala.version>2.13.18</scala.version>
         <enforced-maven-version>3.6.1</enforced-maven-version>
         <!-- See https://www.eclipse.org/projects/handbook/#ip-copyright-headers -->
         <license.dir>${project.basedir}</license.dir>
 
-        <soot.version>4.6.0</soot.version>
+        <soot.version>4.7.0-SNAPSHOT</soot.version>
         <sootup.version>2.0.0</sootup.version>
         <opal.version>6.0.0</opal.version>
         <junit.version>5.13.4</junit.version>

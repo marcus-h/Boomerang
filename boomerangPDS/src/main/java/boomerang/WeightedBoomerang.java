@@ -414,6 +414,7 @@ public abstract class WeightedBoomerang<W extends Weight> {
       }
       if (options.analysisTimeout() < elapsed) {
         if (analysisWatch.isRunning()) analysisWatch.stop();
+        Thread.currentThread().dumpStack();
         throw new BoomerangTimeoutException(elapsed, stats);
       }
     }
@@ -956,8 +957,10 @@ public abstract class WeightedBoomerang<W extends Weight> {
           "One cannot re-use the same Boomerang solver for more than one query, unless option allowMultipleQueries is enabled. If allowMultipleQueries is enabled, ensure to call unregisterAllListeners() on this instance upon termination of all queries.");
     }
     solving = true;
+    boolean startedWatch = false;
     if (!analysisWatch.isRunning()) {
       analysisWatch.start();
+      startedWatch = true;
     }
     boolean timedout = false;
     try {
@@ -978,14 +981,12 @@ public abstract class WeightedBoomerang<W extends Weight> {
           analysisWatch,
           query,
           visitedMethods.size());
-    } catch (Throwable e) {
-      LOGGER.error("Solving query crashed", e);
     }
     if (!options.allowMultipleQueries()) {
       unregisterAllListeners();
     }
 
-    if (analysisWatch.isRunning()) {
+    if (analysisWatch.isRunning() && startedWatch) {
       analysisWatch.stop();
     }
     return new ForwardBoomerangResults<>(
@@ -1013,8 +1014,10 @@ public abstract class WeightedBoomerang<W extends Weight> {
           "One cannot re-use the same Boomerang solver for more than one query, unless option allowMultipleQueries is enabled. If allowMultipleQueries is enabled, ensure to call unregisterAllListeners() on this instance upon termination of all queries.");
     }
     solving = true;
+    boolean startedWatch = false;
     if (timing && !analysisWatch.isRunning()) {
       analysisWatch.start();
+      startedWatch = true;
     }
     boolean timedout = false;
     try {
@@ -1033,7 +1036,7 @@ public abstract class WeightedBoomerang<W extends Weight> {
     if (!options.allowMultipleQueries()) {
       unregisterAllListeners();
     }
-    if (timing && analysisWatch.isRunning()) {
+    if (timing && analysisWatch.isRunning() && startedWatch) {
       analysisWatch.stop();
     }
     return new BackwardBoomerangResults<>(
@@ -1097,8 +1100,6 @@ public abstract class WeightedBoomerang<W extends Weight> {
           analysisWatch,
           query,
           visitedMethods.size());
-    } catch (Throwable e) {
-      LOGGER.error("Solving query crashed", e);
     }
     if (!options.allowMultipleQueries()) {
       unregisterAllListeners();

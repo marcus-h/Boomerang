@@ -69,7 +69,7 @@ public class BoomerangPretransformer extends BodyTransformer {
           return UNINITIALIZED_FIELD_TAG_NAME;
         }
 
-        @Override
+        //@Override
         public byte[] getValue() throws AttributeValueException {
           return new byte[0];
         }
