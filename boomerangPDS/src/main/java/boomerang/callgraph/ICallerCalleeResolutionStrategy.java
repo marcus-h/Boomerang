@@ -27,19 +27,23 @@ public interface ICallerCalleeResolutionStrategy {
     ICallerCalleeResolutionStrategy newInstance(WeightedBoomerang solver, CallGraph cg);
   }
 
+  public interface OnCallerCalleeFoundCallback {
+    void accept(String source, Statement stmt, Method method);
+  }
+
   boolean computeFallback(
-      BiConsumer<Statement, Method> onCallerCalleeFoundCallback,
+      OnCallerCalleeFoundCallback onCallerCalleeFoundCallback,
       Consumer<Statement> onNoCalleeFoundCallback);
 
   void resolveCallersForCalleeFallback(
-      Method callee, BiConsumer<Statement, Method> onCallerCalleeFoundCallback);
+      Method callee, OnCallerCalleeFoundCallback onCallerCalleeFoundCallback);
 
   void resolveSpecialInvoke(
-      Statement stmt, BiConsumer<Statement, Method> onCallerCalleeFoundCallback);
+      Statement stmt, OnCallerCalleeFoundCallback onCallerCalleeFoundCallback);
 
   void resolveInstanceInvoke(
-      Statement stmt, BiConsumer<Statement, Method> onCallerCalleeFoundCallback);
+      Statement stmt, OnCallerCalleeFoundCallback onCallerCalleeFoundCallback);
 
   void resolveStaticInvoke(
-      Statement stmt, BiConsumer<Statement, Method> onCallerCalleeFoundCallback);
+      Statement stmt, OnCallerCalleeFoundCallback onCallerCalleeFoundCallback);
 }

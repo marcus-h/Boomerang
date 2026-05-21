@@ -62,5 +62,5 @@ public interface ObservableICFG<N, M> {
 
   void computeFallback();
 
-  void addEdge(Edge e);
+  void addEdge(String source, Edge e);
 }

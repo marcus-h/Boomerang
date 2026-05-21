@@ -18,6 +18,7 @@ import boomerang.BackwardQuery;
 import boomerang.ForwardQuery;
 import boomerang.Query;
 import boomerang.WeightedBoomerang;
+import boomerang.otf.benchmark.DataHarvester;
 import boomerang.results.BackwardBoomerangResults;
 import boomerang.results.ForwardBoomerangResults;
 import boomerang.scope.ControlFlowGraph.Edge;
@@ -284,6 +285,7 @@ public class IDEALSeedSolver<W extends Weight> {
 
   public ForwardBoomerangResults<W> run() {
     LOGGER.debug("Starting Phase 1 of IDEal");
+    DataHarvester.setPhase(DataHarvester.Phase.DATA_FLOW);
     ForwardBoomerangResults<W> resultPhase1 = runPhase(this.phase1Solver, Phases.ObjectFlow);
     if (resultPhase1.isTimedOut()) {
       if (analysisStopwatch.isRunning()) {
@@ -292,6 +294,7 @@ public class IDEALSeedSolver<W extends Weight> {
       throw new IDEALSeedTimeout(this, this.phase1Solver, resultPhase1);
     }
     LOGGER.debug("Starting Phase 2 of IDEal");
+    DataHarvester.setPhase(DataHarvester.Phase.OBJECT_FLOW);
     ForwardBoomerangResults<W> resultPhase2 = runPhase(this.phase2Solver, Phases.ValueFlow);
     if (resultPhase2.isTimedOut()) {
       if (analysisStopwatch.isRunning()) {

@@ -76,7 +76,7 @@ public class BoomerangResolver implements ICallerCalleeResolutionStrategy {
 
   @Override
   public boolean computeFallback(
-      BiConsumer<Statement, Method> onCallerCalleeFoundCallback,
+      ICallerCalleeResolutionStrategy.OnCallerCalleeFoundCallback onCallerCalleeFoundCallback,
       Consumer<Statement> onNoCalleeFoundCallback) {
     int refined = 0;
     int precomputed = 0;
@@ -95,7 +95,7 @@ public class BoomerangResolver implements ICallerCalleeResolutionStrategy {
             // TODO Refactor. Should not be required, if the backward analysis is sound (data-flow
             // of static fields)
             if (e.tgt().isDefined()) {
-              onCallerCalleeFoundCallback.accept(e.src(), e.tgt());
+              onCallerCalleeFoundCallback.accept("computeFallback", e.src(), e.tgt());
             }
           }
         }
@@ -112,16 +112,16 @@ public class BoomerangResolver implements ICallerCalleeResolutionStrategy {
 
   @Override
   public void resolveCallersForCalleeFallback(
-      Method callee, BiConsumer<Statement, Method> onCallerCalleeFoundCallback) {
+      Method callee, ICallerCalleeResolutionStrategy.OnCallerCalleeFoundCallback onCallerCalleeFoundCallback) {
     Collection<CallGraph.Edge> edges = precomputedCallGraph.edgesInto(callee);
     for (CallGraph.Edge edge : edges) {
-      onCallerCalleeFoundCallback.accept(edge.src(), edge.tgt());
+      onCallerCalleeFoundCallback.accept("resolveCallersForCalleeFallback", edge.src(), edge.tgt());
     }
   }
 
   @Override
   public void resolveSpecialInvoke(
-      Statement stmt, BiConsumer<Statement, Method> onCallerCalleeFoundCallback) {
+      Statement stmt, ICallerCalleeResolutionStrategy.OnCallerCalleeFoundCallback onCallerCalleeFoundCallback) {
     InvokeExpr ie = stmt.getInvokeExpr();
     Collection<Method> methodFromClassOrFromSuperclass =
         getMethodFromClassOrFromSuperclass(
@@ -130,14 +130,14 @@ public class BoomerangResolver implements ICallerCalleeResolutionStrategy {
       throw new RuntimeException(
           "Illegal state, a special call should exactly resolve to one target");
     } else if (!methodFromClassOrFromSuperclass.isEmpty()) {
-      onCallerCalleeFoundCallback.accept(
+      onCallerCalleeFoundCallback.accept("resolveSpecialInvoke",
           stmt, methodFromClassOrFromSuperclass.stream().findFirst().get());
     }
   }
 
   @Override
   public void resolveStaticInvoke(
-      Statement stmt, BiConsumer<Statement, Method> onCallerCalleeFoundCallback) {
+      Statement stmt, ICallerCalleeResolutionStrategy.OnCallerCalleeFoundCallback onCallerCalleeFoundCallback) {
     InvokeExpr ie = stmt.getInvokeExpr();
     Collection<Method> methodFromClassOrFromSuperclass =
         getMethodFromClassOrFromSuperclass(
@@ -146,14 +146,14 @@ public class BoomerangResolver implements ICallerCalleeResolutionStrategy {
       throw new RuntimeException(
           "Illegal state, a static call should exactly resolve to one target");
     } else if (!methodFromClassOrFromSuperclass.isEmpty()) {
-      onCallerCalleeFoundCallback.accept(
+      onCallerCalleeFoundCallback.accept("resolveStaticInvoke",
           stmt, methodFromClassOrFromSuperclass.stream().findFirst().get());
     }
   }
 
   @Override
   public void resolveInstanceInvoke(
-      Statement resolvingStmt, BiConsumer<Statement, Method> onCallerCalleeFoundCallback) {
+      Statement resolvingStmt, ICallerCalleeResolutionStrategy.OnCallerCalleeFoundCallback onCallerCalleeFoundCallback) {
     logger.debug("Queried for callees of '{}'.", resolvingStmt);
     // Construct BackwardQuery, so we know which types the object might have
     InvokeExpr invokeExpr = resolvingStmt.getInvokeExpr();
@@ -233,12 +233,12 @@ public class BoomerangResolver implements ICallerCalleeResolutionStrategy {
   private final class IterateSolvers<W extends Weight> implements SolverCreationListener<W> {
     private final BackwardQuery query;
     private final Statement invokeExpr;
-    private final BiConsumer<Statement, Method> onCallerCalleeFoundCallback;
+    private final ICallerCalleeResolutionStrategy.OnCallerCalleeFoundCallback onCallerCalleeFoundCallback;
 
     private IterateSolvers(
         BackwardQuery query,
         Statement invokeExpr,
-        BiConsumer<Statement, Method> onCallerCalleeFoundCallback) {
+        ICallerCalleeResolutionStrategy.OnCallerCalleeFoundCallback onCallerCalleeFoundCallback) {
       this.query = query;
       this.invokeExpr = invokeExpr;
       this.onCallerCalleeFoundCallback = onCallerCalleeFoundCallback;
@@ -273,7 +273,7 @@ public class BoomerangResolver implements ICallerCalleeResolutionStrategy {
                                       getMethodFromClassOrFromSuperclass(
                                           invokeExpr.getInvokeExpr().getDeclaredMethod(),
                                           type.getWrappedClass())) {
-                                    onCallerCalleeFoundCallback.accept(invokeExpr, calleeMethod);
+                                    onCallerCalleeFoundCallback.accept("resolveInstanceInvoke", invokeExpr, calleeMethod);
                                   }
                                 } else if (type.isArrayType()) {
                                   Type base = type.getArrayBaseType();
@@ -282,7 +282,7 @@ public class BoomerangResolver implements ICallerCalleeResolutionStrategy {
                                         getMethodFromClassOrFromSuperclass(
                                             invokeExpr.getInvokeExpr().getDeclaredMethod(),
                                             base.getWrappedClass())) {
-                                      onCallerCalleeFoundCallback.accept(invokeExpr, calleeMethod);
+                                      onCallerCalleeFoundCallback.accept("resolveInstanceInvoke", invokeExpr, calleeMethod);
                                     }
                                   }
                                 }

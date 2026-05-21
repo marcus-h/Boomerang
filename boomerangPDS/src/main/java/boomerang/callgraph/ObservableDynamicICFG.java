@@ -15,6 +15,7 @@
 package boomerang.callgraph;
 
 import boomerang.controlflowgraph.ObservableControlFlowGraph;
+import boomerang.otf.benchmark.DataHarvester;
 import boomerang.scope.CallGraph;
 import boomerang.scope.CallGraph.Edge;
 import boomerang.scope.InvokeExpr;
@@ -59,13 +60,16 @@ public class ObservableDynamicICFG implements ObservableICFG<Statement, Method> 
 
   private final ObservableControlFlowGraph cfg;
   private final ICallerCalleeResolutionStrategy resolutionStrategy;
-  private final BiConsumer<Statement, Method> onCallerCalleeFoundCallback =
-      (stmt, method) -> addEdge(new CallGraph.Edge(stmt, method));
+  private final ICallerCalleeResolutionStrategy.OnCallerCalleeFoundCallback onCallerCalleeFoundCallback =
+      (source, stmt, method) -> addEdge(source, new CallGraph.Edge(stmt, method));
+
+  private boolean debug;
 
   public ObservableDynamicICFG(
       ObservableControlFlowGraph cfg, ICallerCalleeResolutionStrategy resolutionStrategy) {
     this.cfg = cfg;
     this.resolutionStrategy = resolutionStrategy;
+    debug = System.getenv().keySet().contains("DEBUG_OTF_CG");
   }
 
   @Override
@@ -144,9 +148,12 @@ public class ObservableDynamicICFG implements ObservableICFG<Statement, Method> 
    * call graph did not change
    */
   @Override
-  public void addEdge(Edge edge) {
+  public void addEdge(String source, Edge edge) {
     if (!demandDrivenCallGraph.addEdge(edge)) {
       return;
+    }
+    if (debug) {
+      DataHarvester.logAddedEdge(source, edge);
     }
     Statement caller = edge.src();
     Method callee = edge.tgt();
@@ -163,6 +170,7 @@ public class ObservableDynamicICFG implements ObservableICFG<Statement, Method> 
     for (CallerListener<Statement, Method> listener :
         Lists.newArrayList(callerListeners.get(callee))) {
       listener.onCallerAdded(caller, callee);
+      processedCallerListeners.add(listener);
     }
   }
 

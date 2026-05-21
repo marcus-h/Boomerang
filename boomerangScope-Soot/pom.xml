@@ -22,7 +22,8 @@
     </scm>
 
     <properties>
-        <soot.version>4.7.0-SNAPSHOT</soot.version>
+        <!--<soot.version>4.8.0-SNAPSHOT</soot.version>-->
+        <soot.version>4.7.1</soot.version>
         <license.dir>${project.parent.basedir}</license.dir>
     </properties>
 

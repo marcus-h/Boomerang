@@ -14,6 +14,7 @@
  */
 package boomerang.callgraph;
 
+import boomerang.otf.benchmark.DataHarvester;
 import boomerang.scope.CallGraph;
 import boomerang.scope.CallGraph.Edge;
 import boomerang.scope.Method;
@@ -33,11 +34,16 @@ public class ObservableStaticICFG implements ObservableICFG<Statement, Method> {
   /** Wrapped static ICFG. If available, this is used to handle all queries. */
   private final CallGraph precomputedGraph;
 
+  private CallGraph exploredSubGraph = new CallGraph();
+
   private static final Logger LOGGER = LoggerFactory.getLogger(ObservableStaticICFG.class);
   private static final int IMPRECISE_CALL_GRAPH_WARN_THRESHOLD = 30000;
 
+  private boolean debug;
+
   public ObservableStaticICFG(CallGraph icfg) {
     this.precomputedGraph = icfg;
+    debug = System.getenv().keySet().contains("DEBUG_OTF_CG");
   }
 
   @Override
@@ -53,6 +59,7 @@ public class ObservableStaticICFG implements ObservableICFG<Statement, Method> {
       }
     }
     for (CallGraph.Edge e : edges) {
+      addEdge("precomputed", e);
       if (e.tgt().isDefined()) {
         listener.onCalleeAdded(listener.getObservedCaller(), e.tgt());
       }
@@ -127,7 +134,12 @@ public class ObservableStaticICFG implements ObservableICFG<Statement, Method> {
   }
 
   @Override
-  public void addEdge(Edge e) {
-    throw new RuntimeException("Unnecessary");
+  public void addEdge(String source, Edge e) {
+    if (!exploredSubGraph.addEdge(e)) {
+      return;
+    }
+    if (debug) {
+      DataHarvester.logAddedEdge(source, e);
+    }
   }
 }

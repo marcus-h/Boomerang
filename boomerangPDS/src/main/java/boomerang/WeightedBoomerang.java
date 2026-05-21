@@ -24,6 +24,7 @@ import boomerang.controlflowgraph.PredecessorListener;
 import boomerang.controlflowgraph.StaticCFG;
 import boomerang.controlflowgraph.SuccessorListener;
 import boomerang.debugger.Debugger;
+import boomerang.otf.benchmark.DataHarvester;
 import boomerang.options.BoomerangOptions;
 import boomerang.poi.AbstractPOI;
 import boomerang.poi.CopyAccessPathChain;
@@ -449,6 +450,8 @@ public abstract class WeightedBoomerang<W extends Weight> {
     this(frameworkScope, BoomerangOptions.DEFAULT());
   }
 
+  private boolean debug;
+
   public WeightedBoomerang(FrameworkScope frameworkScope, BoomerangOptions options) {
     this.frameworkScope = frameworkScope;
     this.options = options;
@@ -458,6 +461,7 @@ public abstract class WeightedBoomerang<W extends Weight> {
     this.dataFlowscope = frameworkScope.getDataFlowScope();
     // TODO Revisit this
     this.stats = new SimpleBoomerangStats<>();
+    debug = System.getenv().keySet().contains("DEBUG_OTF_CG");
 
     if (options.onTheFlyControlFlow()) {
       this.cfg = new DynamicCFG();
@@ -1131,6 +1135,9 @@ public abstract class WeightedBoomerang<W extends Weight> {
   }
 
   protected void backwardSolve(BackwardQuery query) {
+    if (debug) {
+      DataHarvester.logQuery(query);
+    }
     AbstractBoomerangSolver<W> solver = queryToBackwardSolvers.getOrCreate(query);
     INode<Node<ControlFlowGraph.Edge, Val>> fieldTarget = solver.createQueryNodeField(query);
     INode<Val> callTarget =
@@ -1143,6 +1150,9 @@ public abstract class WeightedBoomerang<W extends Weight> {
   }
 
   private AbstractBoomerangSolver<W> forwardSolve(ForwardQuery query) {
+    if (debug) {
+      DataHarvester.logQuery(query);
+    }
     ControlFlowGraph.Edge cfgEdge = query.asNode().stmt();
     AbstractBoomerangSolver<W> solver = queryToSolvers.getOrCreate(query);
     INode<Node<ControlFlowGraph.Edge, Val>> fieldTarget = solver.createQueryNodeField(query);
