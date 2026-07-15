@@ -50,9 +50,10 @@ public abstract class AnalysisScope {
         continue;
       }
 
-      if (isExcluded(m)) {
+      if (isExcluded(m) || m.getDeclaringClass().getFullyQualifiedName().startsWith("java.util.")) {
         continue;
       }
+      System.out.println("seedFinder|" + m.getDeclaringClass().getFullyQualifiedName());
 
       LOGGER.trace("Processing {}", m);
       for (Statement stmt : m.getStatements()) {

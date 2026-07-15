@@ -112,6 +112,9 @@ public abstract class SyncPDSSolver<
         true);
   }
 
+  protected void checkTimeout() {
+  }
+
   public SyncPDSSolver(
       final boolean useCallSummaries,
       NestedWeightedPAutomatons<Stmt, INode<Fact>, W> callSummaries,
@@ -207,6 +210,12 @@ public abstract class SyncPDSSolver<
           @Override
           public int getMaxUnbalancedDepth() {
             return maxUnbalancedCallDepth;
+          }
+
+          @Override
+          public void registerListener(WPAStateListener<Stmt, INode<Fact>, W> listener) {
+            checkTimeout();
+            super.registerListener(listener);
           }
         };
 

@@ -557,6 +557,11 @@ public abstract class WeightedBoomerang<W extends Weight> {
             checkTimeout();
             return super.preventFieldTransitionAdd(t, weight);
           }
+
+          @Override
+          protected void checkTimeout() {
+            WeightedBoomerang.this.checkTimeout();
+          }
         };
 
     solver.registerListener(

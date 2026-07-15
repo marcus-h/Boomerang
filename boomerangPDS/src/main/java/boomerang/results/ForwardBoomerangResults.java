@@ -90,7 +90,15 @@ public class ForwardBoomerangResults<W extends Weight> extends AbstractBoomerang
   }
 
   public Table<ControlFlowGraph.Edge, Val, W> asEdgeValWeightTable() {
-    return asEdgeValWeightTable(query);
+    boolean isRunning = analysisWatch.isRunning();
+    if (!isRunning) {
+      analysisWatch.start();
+    }
+    Table<ControlFlowGraph.Edge, Val, W> result = asEdgeValWeightTable(query);
+    if (!isRunning) {
+      analysisWatch.stop();
+    }
+    return result;
   }
 
   public Table<Statement, Val, W> asStatementValWeightTable() {

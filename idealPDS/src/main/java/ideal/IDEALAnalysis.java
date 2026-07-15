@@ -17,10 +17,12 @@ package ideal;
 import boomerang.ForwardQuery;
 import boomerang.Query;
 import boomerang.WeightedForwardQuery;
+import boomerang.otf.benchmark.DataHarvester;
 import boomerang.results.ForwardBoomerangResults;
 import boomerang.scope.AnalysisScope;
 import boomerang.scope.ControlFlowGraph.Edge;
 import com.google.common.base.Stopwatch;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -69,18 +71,24 @@ public class IDEALAnalysis<W extends Weight> {
     printOptions();
 
     //Collection<Query> initialSeeds = seedFactory.computeSeeds();
-    Collection<Query> initialSeeds = getInitialSeeds();
+    ArrayList<Query> initialSeeds = new ArrayList<>(getInitialSeeds());
 
     if (initialSeeds.isEmpty()) LOGGER.info("No seeds found!");
     else LOGGER.info("Analysing {} seeds!", initialSeeds.size());
-    for (Query s : initialSeeds) {
+    //for (Query s : initialSeeds) {
+    int size = initialSeeds.size();
+    for (int i = 0; i < size; i++) {
+      Query s = initialSeeds.get(i);
       if (!(s instanceof WeightedForwardQuery)) continue;
       WeightedForwardQuery<W> seed = (WeightedForwardQuery<W>) s;
       seedCount++;
       LOGGER.info("Analyzing {}", seed);
       Stopwatch watch = Stopwatch.createStarted();
+      int num = i + 1;
+      System.out.println("beginLog|" + num + "|" + size + "|" + DataHarvester.serializeQuery(seed));
       analysisTime.put(seed, watch);
       run(seed);
+      System.out.println("endLog|" + num + "|" + size + "|" + DataHarvester.serializeQuery(seed));
       watch.stop();
       LOGGER.debug(
           "Analyzed (finished,timedout): \t ({},{}) of {} seeds",

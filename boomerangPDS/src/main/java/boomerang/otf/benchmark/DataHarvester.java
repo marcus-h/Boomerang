@@ -3,9 +3,10 @@ package boomerang.otf.benchmark;
 import boomerang.BackwardQuery;
 import boomerang.ForwardQuery;
 import boomerang.Query;
+import boomerang.scope.CallGraph.Edge;
+import boomerang.scope.ControlFlowGraph;
 import boomerang.scope.Statement;
 import boomerang.scope.Method;
-import boomerang.scope.CallGraph.Edge;
 
 public class DataHarvester {
 
@@ -39,7 +40,7 @@ public class DataHarvester {
     }
   }
 
-  private static String DELIM = "#";
+  private static String DELIM = "|";
 
   private static Phase phase;
 
@@ -89,10 +90,21 @@ public class DataHarvester {
     logQuery(Kind.BACKWARD_QUERY, query);
   }
 
-  private static void logQuery(Kind kind, Query query) {
+  public static String serializeQuery(ForwardQuery query) {
+    return serializeQuery(Kind.FORWARD_QUERY, query);
+  }
+
+  private static String serializeQuery(Kind kind, Query query) {
     StringBuilder builder = createStringBuilder(kind);
-    builder.append(query.toString().replaceAll("\n", "<NEW_LINE>"));
-    System.out.println(builder.toString());
+    serializeStatement(builder, query.cfgEdge().getStart());
+    builder.append(DELIM);
+    serializeStatement(builder, query.cfgEdge().getTarget());
+    //builder.append(query.toString().replaceAll("\n", "<NEW_LINE>"));
+    return builder.toString();
+  }
+
+  private static void logQuery(Kind kind, Query query) {
+    System.out.println(serializeQuery(kind, query));
   }
 
 }
