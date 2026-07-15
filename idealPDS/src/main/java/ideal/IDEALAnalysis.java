@@ -85,10 +85,10 @@ public class IDEALAnalysis<W extends Weight> {
       LOGGER.info("Analyzing {}", seed);
       Stopwatch watch = Stopwatch.createStarted();
       int num = i + 1;
-      System.out.println("beginLog|" + num + "|" + size + "|" + DataHarvester.serializeQuery(seed));
+      System.out.println("beginLog|" + num + "|" + size + "|" + System.currentTimeMillis() + "|" + DataHarvester.serializeQuery(seed));
       analysisTime.put(seed, watch);
       run(seed);
-      System.out.println("endLog|" + num + "|" + size + "|" + DataHarvester.serializeQuery(seed));
+      System.out.println("endLog|" + num + "|" + size + "|" + System.currentTimeMillis() + "|" + DataHarvester.serializeQuery(seed));
       watch.stop();
       LOGGER.debug(
           "Analyzed (finished,timedout): \t ({},{}) of {} seeds",
