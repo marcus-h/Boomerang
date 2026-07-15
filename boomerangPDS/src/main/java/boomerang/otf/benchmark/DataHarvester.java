@@ -71,7 +71,7 @@ public class DataHarvester {
     Method method = stmt.getMethod();
     serializeMethod(builder, method);
     builder.append(DELIM);
-    builder.append(stmt.toString());
+    builder.append(stmt.toString().replace("\n", "\\n"));
     builder.append(DELIM);
     builder.append(method.getControlFlowGraph().getStatements().indexOf(stmt));
   }
